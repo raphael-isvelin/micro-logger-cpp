@@ -1,6 +1,13 @@
-MIT License
+/*******************************************************************************\
 
-Copyright (c) 2023 Raphaël ISVELIN
+micro-logger-cpp - Header-only C++ logging lib using streams
+
+https://github.com/raphael-isvelin/micro-logger-cpp
+
+--------------------------------------------------------------------------------
+
+License: MIT License (http://www.opensource.org/licenses/mit-license.php)
+Copyright (C) 2023 Raphaël Isvelin
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -19,3 +26,30 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+*******************************************************************************/
+
+#pragma once
+
+#include <string>
+#include <ostream>
+
+#include "log_message_builder.h"
+
+class LogStream {
+ public:
+  LogStream(std::ostream& stream, std::string logType, std::string tag)
+      : _stream(stream), _logType(std::move(logType)), _tag(std::move(tag)) {}
+
+  template <typename T>
+  LogMessageBuilder operator<<(const T& message) {
+    auto builder = LogMessageBuilder(_stream, _logType, _tag);
+    builder << message;
+    return builder;
+  }
+
+ private:
+  std::ostream&   _stream;
+  std::string	    _logType;
+  std::string	    _tag;
+};
