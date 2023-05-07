@@ -42,6 +42,10 @@ class Logger {
     return Logger(stream, tag);
   }
 
+  static std::unique_ptr<Logger> createUnique(std::ostream& stream, const std::string& tag) {
+    return std::unique_ptr<Logger>(new Logger(stream, tag));
+  }
+
   std::ostream& rawOutputStream;
 
   LogStream info;

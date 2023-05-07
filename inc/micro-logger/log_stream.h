@@ -42,7 +42,7 @@ class LogStream {
       : _stream(stream), _logType(std::move(logType)), _tag(std::move(tag)) {}
 
   template <typename T>
-  LogMessageBuilder operator<<(const T& message) {
+  LogMessageBuilder operator<<(const T& message) const {
     auto builder = LogMessageBuilder(_stream, _logType, _tag);
     builder << message;
     return builder;
