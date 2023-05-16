@@ -35,6 +35,7 @@ SOFTWARE.
 #include <ostream>
 
 #include "log_stream.h"
+#include "logs_observer.h"
 
 class Logger {
  public:
@@ -48,16 +49,30 @@ class Logger {
 
   std::ostream& rawOutputStream;
 
+  LogStream debug;
   LogStream info;
   LogStream warning;
   LogStream error;
-  LogStream debug;
+
+  friend class LoggerFactory;
+
+ protected:
+  static constexpr const char* DEFAULT_APP_NAME = "";
+  static constexpr const char* DEFAULT_DEBUG_TAG = "\033[36mINFO\033[0m   ";
+  static constexpr const char* DEFAULT_INFO_TAG = "\033[36mINFO\033[0m   ";
+  static constexpr const char* DEFAULT_WARNING_TAG = "\033[33;1mWARNING\033[0m";
+  static constexpr const char* DEFAULT_ERROR_TAG = "\033[31;1mERROR\033[0m  ";
+
+  Logger(const std::string& appName, std::ostream& stream, const std::string& tag,
+         const std::string& debugTag, const std::string& infoTag, const std::string& warningTag, const std::string& errorTag,
+         LogsObserver* callback)
+      : rawOutputStream(stream),
+        debug(appName, stream, debugTag, tag, callback),
+        info(appName, stream, infoTag, tag, callback),
+        warning(appName, stream, warningTag, tag, callback),
+        error(appName, stream, errorTag, tag, callback) {}
 
  private:
   Logger(std::ostream& stream, const std::string& tag)
-      : rawOutputStream(stream),
-        info(stream, "\033[36mINFO\033[0m   ", tag),
-        warning(stream, "\033[33;1mWARNING\033[0m", tag),
-        error(stream, "\033[31;1mERROR\033[0m  ", tag),
-        debug(stream, "\033[36;2mDEBUG\033[0m  ", tag) {}
+      : Logger(DEFAULT_APP_NAME, stream, tag, DEFAULT_DEBUG_TAG, DEFAULT_INFO_TAG, DEFAULT_WARNING_TAG, DEFAULT_ERROR_TAG, nullptr) {}
 };

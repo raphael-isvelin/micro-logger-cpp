@@ -35,21 +35,33 @@ SOFTWARE.
 #include <ostream>
 
 #include "log_message_builder.h"
+#include "logs_observer.h"
 
 class LogStream {
  public:
-  LogStream(std::ostream& stream, std::string logType, std::string tag)
-      : _stream(stream), _logType(std::move(logType)), _tag(std::move(tag)) {}
+  LogStream(
+      const std::string& appName,
+      std::ostream& stream,
+      std::string logType,
+      std::string tag,
+      LogsObserver* callback
+  ) : _formattedAppName(appName.empty() ? "" : "\033[2m(" + appName + ")\033[0m "),
+      _stream(stream),
+      _logType(std::move(logType)),
+      _tag(std::move(tag)),
+      _callback(callback) {}
 
   template <typename T>
   LogMessageBuilder operator<<(const T& message) const {
-    auto builder = LogMessageBuilder(_stream, _logType, _tag);
+    auto builder = LogMessageBuilder(_formattedAppName, _stream, _logType, _tag, _callback);
     builder << message;
     return builder;
   }
 
  private:
+  std::string	    _formattedAppName;
   std::ostream&   _stream;
   std::string	    _logType;
   std::string	    _tag;
+  LogsObserver*   _callback;
 };

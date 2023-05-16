@@ -35,13 +35,20 @@ SOFTWARE.
 #include <sstream>
 #include <iomanip>
 
+#include "logs_observer.h"
+
 class LogMessageBuilder {
  public:
-  LogMessageBuilder(std::ostream& stream, std::string logType, std::string tag)
-      : _stream(&stream), _logType(std::move(logType)), _tag(std::move(tag)), _ss() {}
+  LogMessageBuilder(
+      std::string formattedAppName,
+      std::ostream& stream,
+      std::string logType,
+      std::string tag,
+      LogsObserver* callback
+  ) : _formattedAppName(std::move(formattedAppName)), _stream(&stream), _logType(std::move(logType)), _tag(std::move(tag)), _callback(callback), _ss() {}
 
   LogMessageBuilder(LogMessageBuilder&& other) noexcept
-      : _stream(other._stream), _logType(other._logType), _tag(other._tag), _ss() {
+      : _formattedAppName(other._formattedAppName), _stream(other._stream), _logType(other._logType), _tag(other._tag), _callback(other._callback), _ss() {
     _ss << other._ss.str();
   }
 
@@ -58,8 +65,13 @@ class LogMessageBuilder {
 
   ~LogMessageBuilder() {
     std::stringstream log;
-    log << getCurrentTime() << " | " << _logType << " | \033[1m" << _tag << "\033[0m | " << _ss.str();
-    (*_stream) << log.str() << std::endl;
+    log << _formattedAppName << getCurrentTime() << " | " << _logType << " | \033[1m" << _tag << "\033[0m | " << _ss.str();
+
+    std::string logStr = log.str();
+    (*_stream) << logStr << std::endl;
+    if (_callback != nullptr) {
+      _callback->onOutputLogMessage(logStr);
+    }
   }
 
   template <typename T>
@@ -69,9 +81,11 @@ class LogMessageBuilder {
   }
 
  private:
+  std::string		      _formattedAppName;
   std::ostream*		    _stream;
   std::string		      _logType;
   std::string		      _tag;
+  LogsObserver*       _callback;
   std::stringstream	  _ss;
 
   static std::string getCurrentTime() {
