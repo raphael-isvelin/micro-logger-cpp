@@ -65,12 +65,11 @@ class LogMessageBuilder {
 
   ~LogMessageBuilder() {
     std::stringstream log;
-    log << _formattedAppName << getCurrentTime() << " | " << _logType << " | \033[1m" << _tag << "\033[0m | " << _ss.str();
+    log << _formattedAppName << getCurrentTime() << " | " << _logType << " | \033[1m" << _tag << "\033[0m | " << _ss.str() << std::endl;
 
-    std::string logStr = log.str();
-    (*_stream) << logStr << std::endl;
+    (*_stream) << log.str();
     if (_callback != nullptr) {
-      _callback->onOutputLogMessage(logStr);
+      _callback->onOutputLogMessage(log.str());
     }
   }
 
