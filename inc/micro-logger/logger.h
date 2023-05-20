@@ -58,7 +58,7 @@ class Logger {
 
  protected:
   static constexpr const char* DEFAULT_APP_NAME = "";
-  static constexpr const char* DEFAULT_DEBUG_TAG = "\033[36mINFO\033[0m   ";
+  static constexpr const char* DEFAULT_DEBUG_TAG = "\033[35mDEBUG\033[0m  ";
   static constexpr const char* DEFAULT_INFO_TAG = "\033[36mINFO\033[0m   ";
   static constexpr const char* DEFAULT_WARNING_TAG = "\033[33;1mWARNING\033[0m";
   static constexpr const char* DEFAULT_ERROR_TAG = "\033[31;1mERROR\033[0m  ";
