@@ -44,21 +44,30 @@ class LogMessageBuilder {
       std::ostream& stream,
       std::string logType,
       std::string tag,
-      LogsObserver* callback
-  ) : _formattedAppName(std::move(formattedAppName)), _stream(&stream), _logType(std::move(logType)), _tag(std::move(tag)), _callback(callback), _ss() {}
+      LogsObserver* callback,
+      bool alwaysFlush
+  ) : _formattedAppName(std::move(formattedAppName)), _stream(&stream),
+      _logType(std::move(logType)), _tag(std::move(tag)),
+      _callback(callback), _alwaysFlush(alwaysFlush), _ss() {}
 
   LogMessageBuilder(LogMessageBuilder&& other) noexcept
-      : _formattedAppName(other._formattedAppName), _stream(other._stream), _logType(other._logType), _tag(other._tag), _callback(other._callback), _ss() {
-    _ss << other._ss.str();
-  }
+      : _formattedAppName(std::move(other._formattedAppName)),
+        _stream(other._stream),
+        _logType(std::move(other._logType)),
+        _tag(std::move(other._tag)),
+        _callback(other._callback),
+        _alwaysFlush(other._alwaysFlush),
+        _ss(std::move(other._ss)) {}
 
   LogMessageBuilder& operator=(LogMessageBuilder&& other) noexcept {
     if (this != &other) {
+      _formattedAppName = std::move(other._formattedAppName);
       _stream = other._stream;
-      _tag = other._tag;
-      _logType = other._logType;
-      _ss.str("");
-      _ss << other._ss.str();
+      _logType = std::move(other._logType);
+      _tag = std::move(other._tag);
+      _callback = other._callback;
+      _alwaysFlush = other._alwaysFlush;
+      _ss = std::move(other._ss);
     }
     return *this;
   }
@@ -68,6 +77,9 @@ class LogMessageBuilder {
     log << _formattedAppName << getCurrentTime() << " | " << _logType << " | \033[1m" << _tag << "\033[0m | " << _ss.str() << std::endl;
 
     (*_stream) << log.str();
+    if (_alwaysFlush) {
+      _stream->flush();
+    }
     if (_callback != nullptr) {
       _callback->onOutputLogMessage(log.str());
     }
@@ -85,6 +97,7 @@ class LogMessageBuilder {
   std::string		      _logType;
   std::string		      _tag;
   LogsObserver*       _callback;
+  bool                _alwaysFlush;
   std::stringstream	  _ss;
 
   static std::string getCurrentTime() {

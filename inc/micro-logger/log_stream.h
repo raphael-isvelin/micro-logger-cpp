@@ -44,16 +44,18 @@ class LogStream {
       std::ostream& stream,
       std::string logType,
       std::string tag,
-      LogsObserver* callback
+      LogsObserver* callback,
+      bool alwaysFlush
   ) : _formattedAppName(appName.empty() ? "" : "\033[2m(" + appName + ")\033[0m "),
       _stream(stream),
       _logType(std::move(logType)),
       _tag(std::move(tag)),
-      _callback(callback) {}
+      _callback(callback),
+      _alwaysFlush(alwaysFlush) {}
 
   template <typename T>
   LogMessageBuilder operator<<(const T& message) const {
-    auto builder = LogMessageBuilder(_formattedAppName, _stream, _logType, _tag, _callback);
+    auto builder = LogMessageBuilder(_formattedAppName, _stream, _logType, _tag, _callback, _alwaysFlush);
     builder << message;
     return builder;
   }
@@ -64,4 +66,5 @@ class LogStream {
   std::string	    _logType;
   std::string	    _tag;
   LogsObserver*   _callback;
+  bool            _alwaysFlush;
 };

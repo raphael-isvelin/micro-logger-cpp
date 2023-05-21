@@ -65,14 +65,14 @@ class Logger {
 
   Logger(const std::string& appName, std::ostream& stream, const std::string& tag,
          const std::string& debugTag, const std::string& infoTag, const std::string& warningTag, const std::string& errorTag,
-         LogsObserver* callback)
+         LogsObserver* callback, bool alwaysFlush)
       : rawOutputStream(stream),
-        debug(appName, stream, debugTag, tag, callback),
-        info(appName, stream, infoTag, tag, callback),
-        warning(appName, stream, warningTag, tag, callback),
-        error(appName, stream, errorTag, tag, callback) {}
+        debug(appName, stream, debugTag, tag, callback, alwaysFlush),
+        info(appName, stream, infoTag, tag, callback, alwaysFlush),
+        warning(appName, stream, warningTag, tag, callback, alwaysFlush),
+        error(appName, stream, errorTag, tag, callback, alwaysFlush) {}
 
  private:
   Logger(std::ostream& stream, const std::string& tag)
-      : Logger(DEFAULT_APP_NAME, stream, tag, DEFAULT_DEBUG_TAG, DEFAULT_INFO_TAG, DEFAULT_WARNING_TAG, DEFAULT_ERROR_TAG, nullptr) {}
+      : Logger(DEFAULT_APP_NAME, stream, tag, DEFAULT_DEBUG_TAG, DEFAULT_INFO_TAG, DEFAULT_WARNING_TAG, DEFAULT_ERROR_TAG, nullptr, false) {}
 };
