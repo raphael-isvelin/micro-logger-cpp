@@ -34,6 +34,7 @@ SOFTWARE.
 #include <string>
 #include <sstream>
 #include <iomanip>
+#include <chrono>
 
 #include "logs_observer.h"
 

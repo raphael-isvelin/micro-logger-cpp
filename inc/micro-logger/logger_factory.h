@@ -34,6 +34,7 @@ SOFTWARE.
 #include <string>
 #include <ostream>
 #include <utility>
+#include <memory>
 
 #include "logger.h"
 #include "logs_observer.h"
