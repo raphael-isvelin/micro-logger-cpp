@@ -33,6 +33,7 @@ SOFTWARE.
 
 #include <string>
 #include <ostream>
+#include <memory>
 
 #include "log_stream.h"
 #include "logs_observer.h"
