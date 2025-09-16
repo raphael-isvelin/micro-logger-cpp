@@ -7,7 +7,7 @@ https://github.com/raphael-isvelin/micro-logger-cpp
 --------------------------------------------------------------------------------
 
 License: MIT License (http://www.opensource.org/licenses/mit-license.php)
-Copyright (C) 2023 Raphaël Isvelin
+Copyright (C) 2025 Raphaël Isvelin
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -32,22 +32,14 @@ SOFTWARE.
 #pragma once
 
 #include <string>
-#include <ostream>
 #include <memory>
 
 #include "log_stream.h"
-#include "logs_observer.h"
+
+class LogsObserver;
 
 class Logger {
  public:
-  static Logger create(std::ostream& stream, const std::string& tag) {
-    return Logger(stream, tag);
-  }
-
-  static std::unique_ptr<Logger> createUnique(std::ostream& stream, const std::string& tag) {
-    return std::unique_ptr<Logger>(new Logger(stream, tag));
-  }
-
   std::ostream& rawOutputStream;
 
   LogStream debug;
@@ -58,22 +50,18 @@ class Logger {
   friend class LoggerFactory;
 
  protected:
-  static constexpr const char* DEFAULT_APP_NAME = "";
-  static constexpr const char* DEFAULT_DEBUG_TAG = "\033[35mDEBUG\033[0m  ";
-  static constexpr const char* DEFAULT_INFO_TAG = "\033[36mINFO\033[0m   ";
-  static constexpr const char* DEFAULT_WARNING_TAG = "\033[33;1mWARNING\033[0m";
-  static constexpr const char* DEFAULT_ERROR_TAG = "\033[31;1mERROR\033[0m  ";
-
-  Logger(const std::string& appName, std::ostream& stream, const std::string& tag,
-         const std::string& debugTag, const std::string& infoTag, const std::string& warningTag, const std::string& errorTag,
-         LogsObserver* callback, bool alwaysFlush)
-      : rawOutputStream(stream),
-        debug(appName, stream, debugTag, tag, callback, alwaysFlush),
-        info(appName, stream, infoTag, tag, callback, alwaysFlush),
-        warning(appName, stream, warningTag, tag, callback, alwaysFlush),
-        error(appName, stream, errorTag, tag, callback, alwaysFlush) {}
-
- private:
-  Logger(std::ostream& stream, const std::string& tag)
-      : Logger(DEFAULT_APP_NAME, stream, tag, DEFAULT_DEBUG_TAG, DEFAULT_INFO_TAG, DEFAULT_WARNING_TAG, DEFAULT_ERROR_TAG, nullptr, false) {}
+  Logger(
+    std::ostream& stream,
+    const bool alwaysFlush,
+    LogsObserver* callback,
+    const std::string& formattedAppName, const std::string& formattedLoggerName,
+    const std::string& debugTag, const std::string& infoTag, const std::string& warningTag, const std::string& errorTag,
+    std::mutex* streamMutex, std::mutex* callbackMutex
+  ) : rawOutputStream(stream),
+      debug(stream, alwaysFlush, callback, formattedAppName, debugTag, formattedLoggerName, streamMutex, callbackMutex),
+      info(stream, alwaysFlush, callback, formattedAppName, infoTag, formattedLoggerName, streamMutex, callbackMutex),
+      warning(stream, alwaysFlush, callback, formattedAppName, warningTag, formattedLoggerName, streamMutex, callbackMutex),
+      error(stream, alwaysFlush, callback, formattedAppName, errorTag, formattedLoggerName, streamMutex, callbackMutex) {
+    // empty
+  }
 };

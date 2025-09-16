@@ -7,7 +7,7 @@ https://github.com/raphael-isvelin/micro-logger-cpp
 --------------------------------------------------------------------------------
 
 License: MIT License (http://www.opensource.org/licenses/mit-license.php)
-Copyright (C) 2023 Raphaël Isvelin
+Copyright (C) 2025 Raphaël Isvelin
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -33,56 +33,86 @@ SOFTWARE.
 
 #include <string>
 #include <sstream>
-#include <iomanip>
-#include <chrono>
 
 #include "logs_observer.h"
 
 class LogMessageBuilder {
  public:
   LogMessageBuilder(
-      std::string formattedAppName,
-      std::ostream& stream,
-      std::string logType,
-      std::string tag,
-      LogsObserver* callback,
-      bool alwaysFlush
-  ) : _formattedAppName(std::move(formattedAppName)), _stream(&stream),
-      _logType(std::move(logType)), _tag(std::move(tag)),
-      _callback(callback), _alwaysFlush(alwaysFlush), _ss() {}
+    std::ostream& stream,
+    const bool alwaysFlush,
+    LogsObserver* callback,
+    std::string formattedTime,
+    std::string formattedAppName,
+    std::string formattedLogLevel,
+    std::string formattedLoggerName,
+    std::mutex* streamMutex,
+    std::mutex* callbackMutex
+  ) : _stream(&stream),
+      _alwaysFlush(alwaysFlush),
+      _callback(callback),
+      _formattedTime(std::move(formattedTime)),
+      _formattedAppName(std::move(formattedAppName)),
+      _formattedLogLevel(std::move(formattedLogLevel)),
+      _formattedLoggerName(std::move(formattedLoggerName)),
+      _streamMutex(streamMutex),
+      _callbackMutex(callbackMutex) {
+    // empty
+  }
 
   LogMessageBuilder(LogMessageBuilder&& other) noexcept
-      : _formattedAppName(std::move(other._formattedAppName)),
-        _stream(other._stream),
-        _logType(std::move(other._logType)),
-        _tag(std::move(other._tag)),
-        _callback(other._callback),
+      : _stream(other._stream),
         _alwaysFlush(other._alwaysFlush),
-        _ss(std::move(other._ss)) {}
+        _callback(other._callback),
+        _formattedTime(std::move(other._formattedTime)),
+        _formattedAppName(std::move(other._formattedAppName)),
+        _formattedLogLevel(std::move(other._formattedLogLevel)),
+        _formattedLoggerName(std::move(other._formattedLoggerName)),
+        _ss(std::move(other._ss)),
+        _streamMutex(other._streamMutex),
+        _callbackMutex(other._callbackMutex) {}
 
   LogMessageBuilder& operator=(LogMessageBuilder&& other) noexcept {
     if (this != &other) {
-      _formattedAppName = std::move(other._formattedAppName);
       _stream = other._stream;
-      _logType = std::move(other._logType);
-      _tag = std::move(other._tag);
-      _callback = other._callback;
       _alwaysFlush = other._alwaysFlush;
+      _callback = other._callback;
+      _formattedTime = std::move(other._formattedTime);
+      _formattedAppName = std::move(other._formattedAppName);
+      _formattedLogLevel = std::move(other._formattedLogLevel);
+      _formattedLoggerName = std::move(other._formattedLoggerName);
       _ss = std::move(other._ss);
+      _streamMutex = other._streamMutex;
+      _callbackMutex = other._callbackMutex;
     }
     return *this;
   }
 
   ~LogMessageBuilder() {
     std::stringstream log;
-    log << _formattedAppName << getCurrentTime() << " | " << _logType << " | \033[1m" << _tag << "\033[0m | " << _ss.str() << std::endl;
+    log << _formattedAppName << _formattedTime << " | " << _formattedLogLevel << " | " << _formattedLoggerName << " | " << _ss.str() << std::endl;
+    const std::string logMessage = log.str();
 
-    (*_stream) << log.str();
-    if (_alwaysFlush) {
-      _stream->flush();
+    if (_streamMutex != nullptr) {
+      std::lock_guard<std::mutex> lock(*_streamMutex);
+      (*_stream) << logMessage;
+      if (_alwaysFlush) {
+        _stream->flush();
+      }
+    } else {
+      (*_stream) << logMessage;
+      if (_alwaysFlush) {
+        _stream->flush();
+      }
     }
+
     if (_callback != nullptr) {
-      _callback->onOutputLogMessage(log.str());
+      if (_callbackMutex != nullptr) {
+        std::lock_guard<std::mutex> lock(*_callbackMutex);
+        _callback->onOutputLogMessage(logMessage);
+      } else {
+        _callback->onOutputLogMessage(logMessage);
+      }
     }
   }
 
@@ -93,24 +123,18 @@ class LogMessageBuilder {
   }
 
  private:
-  std::string		      _formattedAppName;
-  std::ostream*		    _stream;
-  std::string		      _logType;
-  std::string		      _tag;
-  LogsObserver*       _callback;
-  bool                _alwaysFlush;
-  std::stringstream	  _ss;
+  std::ostream*     _stream;
+  bool              _alwaysFlush;
 
-  static std::string getCurrentTime() {
-    auto now = std::chrono::system_clock::now();
-    auto now_ms = std::chrono::time_point_cast<std::chrono::milliseconds>(now);
-    auto now_s = std::chrono::time_point_cast<std::chrono::seconds>(now);
-    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now_ms - now_s);
+  LogsObserver*     _callback;
 
-    std::time_t time = std::chrono::system_clock::to_time_t(now);
-    std::tm* local_time = std::localtime(&time);
-    std::stringstream ss;
-    ss << std::put_time(local_time, "%Y-%m-%d %H:%M:%S") << "." << std::setfill('0') << std::setw(3) << ms.count();
-    return ss.str();
-  }
+  std::string       _formattedTime;
+  std::string       _formattedAppName;
+  std::string       _formattedLogLevel;
+  std::string       _formattedLoggerName;
+
+  std::stringstream _ss;
+
+  std::mutex*       _streamMutex;
+  std::mutex*       _callbackMutex;
 };

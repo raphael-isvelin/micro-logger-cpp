@@ -7,7 +7,7 @@ https://github.com/raphael-isvelin/micro-logger-cpp
 --------------------------------------------------------------------------------
 
 License: MIT License (http://www.opensource.org/licenses/mit-license.php)
-Copyright (C) 2023 Raphaël Isvelin
+Copyright (C) 2025 Raphaël Isvelin
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -32,52 +32,124 @@ SOFTWARE.
 #pragma once
 
 #include <string>
-#include <ostream>
 #include <utility>
 #include <memory>
 
 #include "logger.h"
-#include "logs_observer.h"
+
+class LogsObserver;
+
+enum LogLevel { DEBUG, INFO, WARNING, ERROR };
 
 class LoggerFactory {
  public:
-  LoggerFactory(std::string appName, std::ostream* outputStream,
-                std::string debugTag, std::string infoTag, std::string warningTag, std::string errorTag,
-                LogsObserver* callback, bool alwaysFlush)
-      : _appName(std::move(appName)),
-        _outputStream(outputStream),
-        _debugTag(std::move(debugTag)),
-        _infoTag(std::move(infoTag)),
-        _warningTag(std::move(warningTag)),
-        _errorTag(std::move(errorTag)),
-        _callback(callback),
-        _alwaysFlush(alwaysFlush) {}
+  LoggerFactory(
+    std::ostream* outputStream,
+    const bool alwaysFlush,
+    LogsObserver* callback,
+    const std::string& appName,
+    std::string debugTag, std::string infoTag, std::string warningTag, std::string errorTag,
+    const bool useAnsiEscape,
+    const int loggerNamePadding,
+    const bool threadSafe
+  ) : _outputStream(outputStream),
+      _alwaysFlush(alwaysFlush),
+      _callback(callback),
+      _appName(appName),
+      _formattedAppName(formatAppName(appName, useAnsiEscape)),
+      _debugTag(std::move(debugTag)),
+      _infoTag(std::move(infoTag)),
+      _warningTag(std::move(warningTag)),
+      _errorTag(std::move(errorTag)),
+      _useAnsiEscape(useAnsiEscape),
+      _loggerNamePadding(loggerNamePadding),
+      _streamMutex(new std::mutex()),
+      _callbackMutex(new std::mutex()),
+      _threadSafe(threadSafe),
+      logger(create("LoggerFactory", "\033[31;1m")) {
+    if (!threadSafe) {
+      logger.warning << "Thread safety is disabled";
+    }
+  }
 
-  LoggerFactory(const std::string& appName, std::ostream* stream, LogsObserver* callback, bool alwaysFlush)
-      : LoggerFactory(appName, stream, Logger::DEFAULT_DEBUG_TAG, Logger::DEFAULT_INFO_TAG, Logger::DEFAULT_WARNING_TAG, Logger::DEFAULT_ERROR_TAG, callback, alwaysFlush) {}
+  LoggerFactory(
+    std::ostream* stream,
+    const std::string& appName,
+    LogsObserver* callback,
+    const bool alwaysFlush,
+    const bool useAnsiEscape = DEFAULT_USE_ANSI_ESCAPE,
+    const int loggerNamePadding = DEFAULT_LOGGER_NAME_PADDING
+  ) : LoggerFactory(
+      stream, alwaysFlush,
+      callback,
+      appName,
+      formatLogLevel(DEBUG, useAnsiEscape),
+      formatLogLevel(INFO, useAnsiEscape),
+      formatLogLevel(WARNING, useAnsiEscape),
+      formatLogLevel(ERROR, useAnsiEscape),
+      useAnsiEscape,
+      loggerNamePadding,
+      true) {
+    // empty
+  }
 
-  LoggerFactory(const std::string& appName, std::ostream* stream, LogsObserver* callback)
-      : LoggerFactory(appName, stream, callback, false) {}
+  LoggerFactory(std::ostream* stream, const std::string& appName, LogsObserver* callback)
+      : LoggerFactory(stream, appName, callback, false,  true) {
+    // empty
+  }
 
-  LoggerFactory(const std::string& appName, std::ostream* stream)
-      : LoggerFactory(appName, stream, nullptr) {}
+  LoggerFactory(std::ostream* stream, const std::string& appName)
+      : LoggerFactory(stream, appName, nullptr) {
+    // empty
+  }
 
   explicit LoggerFactory(std::ostream* stream)
-      : LoggerFactory(Logger::DEFAULT_APP_NAME, stream) {}
+      : LoggerFactory(stream, DEFAULT_APP_NAME) {
+    // empty
+  }
 
-  static LoggerFactory factoryFrom(LoggerFactory& baseFactory, std::ostream* newOutputStream, LogsObserver* newCallback) {
-    return LoggerFactory(baseFactory._appName, newOutputStream,
-                         baseFactory._debugTag, baseFactory._infoTag, baseFactory._warningTag, baseFactory._errorTag,
-                         newCallback, baseFactory._alwaysFlush);
+  static LoggerFactory factoryFrom(
+    std::ostream* newOutputStream,
+    LoggerFactory& baseFactory,
+    LogsObserver* newCallback
+  ) {
+    return {
+      newOutputStream,
+      baseFactory._alwaysFlush,
+      newCallback,
+      baseFactory._appName,
+      baseFactory._debugTag, baseFactory._infoTag, baseFactory._warningTag, baseFactory._errorTag,
+      baseFactory._useAnsiEscape,
+      baseFactory._loggerNamePadding,
+      baseFactory._threadSafe
+    };
   }
 
 //// Factory methods
-  Logger create(const std::string& tag) {
-    return Logger(_appName, *_outputStream, tag, _debugTag, _infoTag, _warningTag, _errorTag, _callback, _alwaysFlush);
+  Logger create(const std::string& loggerName, const std::string& ansiEscape = "") {
+    const auto formattedLoggerName = formatLoggerName(loggerName, ansiEscape, _useAnsiEscape, _loggerNamePadding);
+    return {
+      *_outputStream,
+      _alwaysFlush,
+      _callback,
+      _formattedAppName, formattedLoggerName,
+      _debugTag, _infoTag, _warningTag, _errorTag,
+      _threadSafe ? _streamMutex : nullptr,
+      _threadSafe ? _callbackMutex : nullptr
+    };
   }
 
-  std::unique_ptr<Logger> createUnique(const std::string& tag) {
-    return std::unique_ptr<Logger>(new Logger(_appName, *_outputStream, tag, _debugTag, _infoTag, _warningTag, _errorTag, _callback, _alwaysFlush));
+  std::unique_ptr<Logger> createUnique(const std::string& loggerName, const std::string& ansiEscape = "") const {
+    const auto formattedLoggerName = formatLoggerName(loggerName, ansiEscape, _useAnsiEscape, _loggerNamePadding);
+    return std::unique_ptr<Logger>(new Logger(
+      *_outputStream,
+      _alwaysFlush,
+      _callback,
+      _formattedAppName, formattedLoggerName,
+      _debugTag, _infoTag, _warningTag, _errorTag,
+      _threadSafe ? _streamMutex : nullptr,
+      _threadSafe ? _callbackMutex : nullptr
+    ));
   }
 
 //// Getter
@@ -89,13 +161,87 @@ class LoggerFactory {
     return _callback;
   }
 
+//// Setter
+  void loggerNamePadding(const int loggerNamePadding) {
+    _loggerNamePadding = loggerNamePadding;
+  }
+
+  void threadSafe(const bool threadSafe) {
+    _threadSafe = threadSafe;
+    if (!threadSafe) {
+      logger.warning << "Thread safety is disabled";
+    }
+  }
+
  private:
-  std::string	    _appName;
   std::ostream*   _outputStream;
-  std::string	    _debugTag;
-  std::string	    _infoTag;
-  std::string	    _warningTag;
-  std::string	    _errorTag;
-  LogsObserver*   _callback;
   bool            _alwaysFlush;
+
+  LogsObserver*   _callback;
+
+  std::string     _appName;
+  std::string     _formattedAppName;
+
+  std::string     _debugTag;
+  std::string     _infoTag;
+  std::string     _warningTag;
+  std::string     _errorTag;
+
+  bool            _useAnsiEscape;
+  int             _loggerNamePadding;
+
+  std::mutex*     _streamMutex;
+  std::mutex*     _callbackMutex;
+
+  bool            _threadSafe;
+
+  Logger          logger;
+
+//// Formatting
+  static constexpr auto* DEFAULT_APP_NAME = "";
+  static constexpr bool DEFAULT_USE_ANSI_ESCAPE = true;
+  static constexpr int DEFAULT_LOGGER_NAME_PADDING = 16;
+
+  static std::string formatAppName(const std::string& appName, const bool useAnsiEscape) {
+    if (appName.empty()) {
+      return "";
+    }
+    return useAnsiEscape
+      ? "\033[1m(" + appName + ")\033[0m "
+      : "(" + appName + ") ";
+  }
+
+  static std::string formatLoggerName(
+    const std::string& loggerName,
+    const std::string& ansiEscape,
+    const bool useAnsiEscape,
+    const int loggerNamePadding
+  ) {
+    std::string paddedName = loggerName;
+    if (loggerNamePadding > 0 && static_cast<int>(loggerName.length()) < loggerNamePadding) {
+      paddedName = std::string(loggerNamePadding - loggerName.length(), ' ') + paddedName;
+    }
+
+    return (useAnsiEscape ? ansiEscape + "\033[1m" : "")
+        + paddedName
+        + (useAnsiEscape ? "\033[0m" : "");
+  }
+
+  static std::string formatLogLevel(const LogLevel level, const bool useAnsiEscape) {
+    if (useAnsiEscape) {
+      switch (level) {
+        case DEBUG:   return   "\033[35mDEBUG  \033[0m";
+        case INFO:    return   "\033[36mINFO   \033[0m";
+        case WARNING: return "\033[33;1mWARNING\033[0m";
+        case ERROR:   return "\033[31;1mERROR  \033[0m";
+      }
+    } else {
+      switch (level) {
+        case DEBUG:   return "DEBUG  ";
+        case INFO:    return "INFO   ";
+        case WARNING: return "WARNING";
+        case ERROR:   return "ERROR  ";
+      }
+    }
+  }
 };
