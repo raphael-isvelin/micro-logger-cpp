@@ -33,9 +33,13 @@ SOFTWARE.
 
 #include <string>
 
-class LogsObserver {
- public:
-  virtual void onOutputLogMessage(const std::string& newData) = 0;
+namespace ulog {
 
-  virtual ~LogsObserver() = default;
-};
+  class LogsObserver {
+  public:
+    virtual void onOutputLogMessage(const std::string& newData) = 0;
+
+    virtual ~LogsObserver() = default;
+  };
+
+} // namespace ulog

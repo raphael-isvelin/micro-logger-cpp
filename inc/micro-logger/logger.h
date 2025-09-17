@@ -32,36 +32,39 @@ SOFTWARE.
 #pragma once
 
 #include <string>
-#include <memory>
 
 #include "log_stream.h"
 
-class LogsObserver;
+namespace ulog {
 
-class Logger {
- public:
-  std::ostream& rawOutputStream;
+  class LogsObserver;
 
-  LogStream debug;
-  LogStream info;
-  LogStream warning;
-  LogStream error;
+  class Logger {
+  public:
+    std::ostream& rawOutputStream;
 
-  friend class LoggerFactory;
+    LogStream debug;
+    LogStream info;
+    LogStream warning;
+    LogStream error;
 
- protected:
-  Logger(
-    std::ostream& stream,
-    const bool alwaysFlush,
-    LogsObserver* callback,
-    const std::string& formattedAppName, const std::string& formattedLoggerName,
-    const std::string& debugTag, const std::string& infoTag, const std::string& warningTag, const std::string& errorTag,
-    std::mutex* streamMutex, std::mutex* callbackMutex
-  ) : rawOutputStream(stream),
-      debug(stream, alwaysFlush, callback, formattedAppName, debugTag, formattedLoggerName, streamMutex, callbackMutex),
-      info(stream, alwaysFlush, callback, formattedAppName, infoTag, formattedLoggerName, streamMutex, callbackMutex),
-      warning(stream, alwaysFlush, callback, formattedAppName, warningTag, formattedLoggerName, streamMutex, callbackMutex),
-      error(stream, alwaysFlush, callback, formattedAppName, errorTag, formattedLoggerName, streamMutex, callbackMutex) {
-    // empty
-  }
-};
+    friend class LoggerFactory;
+
+  protected:
+    Logger(
+      std::ostream& stream,
+      const bool alwaysFlush,
+      LogsObserver* callback,
+      const std::string& formattedAppName, const std::string& formattedLoggerName,
+      const std::string& debugTag, const std::string& infoTag, const std::string& warningTag, const std::string& errorTag,
+      std::mutex* streamMutex, std::mutex* callbackMutex
+    ) : rawOutputStream(stream),
+        debug(stream, alwaysFlush, callback, formattedAppName, debugTag, formattedLoggerName, streamMutex, callbackMutex),
+        info(stream, alwaysFlush, callback, formattedAppName, infoTag, formattedLoggerName, streamMutex, callbackMutex),
+        warning(stream, alwaysFlush, callback, formattedAppName, warningTag, formattedLoggerName, streamMutex, callbackMutex),
+        error(stream, alwaysFlush, callback, formattedAppName, errorTag, formattedLoggerName, streamMutex, callbackMutex) {
+      // empty
+    }
+  };
+
+} // namespace ulog
