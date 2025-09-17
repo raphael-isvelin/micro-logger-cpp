@@ -86,6 +86,11 @@ namespace ulog {
       return builder;
     }
 
+//// Setter
+  void formattedAppName(std::string formattedAppName) {
+      _formattedAppName = std::move(formattedAppName);
+  }
+
   private:
     std::ostream&     _stream;
     bool              _alwaysFlush;

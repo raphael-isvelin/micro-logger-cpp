@@ -40,7 +40,7 @@ namespace ulog {
   class LogsObserver;
 
   class Logger {
-  public:
+   public:
     std::ostream& rawOutputStream;
 
     LogStream debug;
@@ -50,7 +50,15 @@ namespace ulog {
 
     friend class LoggerFactory;
 
-  protected:
+//// Setter
+    void formattedAppName(const std::string& formattedAppName) {
+      debug.formattedAppName(formattedAppName);
+      info.formattedAppName(formattedAppName);
+      warning.formattedAppName(formattedAppName);
+      error.formattedAppName(formattedAppName);
+    }
+
+   protected:
     Logger(
       std::ostream& stream,
       const bool alwaysFlush,
