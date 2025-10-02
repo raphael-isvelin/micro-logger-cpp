@@ -245,6 +245,7 @@ namespace ulog {
           case ERROR:   return "ERROR  ";
         }
       }
+      return "UNKNOWN"; // unreachable, but don't remove - needed with GCC -Werror -Werror
     }
   };
 
