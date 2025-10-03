@@ -44,7 +44,7 @@ namespace ulog {
   enum LogLevel { DEBUG, INFO, WARNING, ERROR };
 
   class LoggerFactory {
-  public:
+   public:
     LoggerFactory(
       std::ostream* outputStream,
       const bool alwaysFlush,
@@ -127,8 +127,8 @@ namespace ulog {
       };
     }
 
-    //// Factory methods
-    Logger create(const std::string& loggerName, const std::string& ansiEscape = "") {
+//// Factory methods
+    Logger create(const std::string& loggerName, const std::string& ansiEscape = "") const {
       const auto formattedLoggerName = formatLoggerName(loggerName, ansiEscape, _useAnsiEscape, _loggerNamePadding);
       return {
         *_outputStream,
@@ -154,7 +154,7 @@ namespace ulog {
       ));
     }
 
-    //// Getter
+//// Getter
     void outputStream(std::ostream* newStream) {
       _outputStream = newStream;
     }
@@ -163,7 +163,7 @@ namespace ulog {
       return _callback;
     }
 
-    //// Setter
+//// Setter
     void loggerNamePadding(const int loggerNamePadding) {
       _loggerNamePadding = loggerNamePadding;
     }
@@ -175,7 +175,7 @@ namespace ulog {
       }
     }
 
-  private:
+   private:
     std::ostream*   _outputStream;
     bool            _alwaysFlush;
 
@@ -199,7 +199,7 @@ namespace ulog {
 
     Logger          logger;
 
-    //// Formatting
+//// Formatting
     static constexpr auto* DEFAULT_APP_NAME = "";
     static constexpr bool DEFAULT_USE_ANSI_ESCAPE = true;
     static constexpr int DEFAULT_LOGGER_NAME_PADDING = 16;
