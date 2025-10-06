@@ -112,7 +112,7 @@ namespace ulog {
 
     static LoggerFactory factoryFrom(
       std::ostream* newOutputStream,
-      LoggerFactory& baseFactory,
+      const LoggerFactory& baseFactory,
       LogsObserver* newCallback
     ) {
       return {
@@ -155,8 +155,8 @@ namespace ulog {
     }
 
 //// Getter
-    void outputStream(std::ostream* newStream) {
-      _outputStream = newStream;
+    [[nodiscard]] std::ostream* outputStream() const {
+      return _outputStream;
     }
 
     [[nodiscard]] LogsObserver* logsObserver() const {
@@ -164,6 +164,10 @@ namespace ulog {
     }
 
 //// Setter
+    void outputStream(std::ostream* newStream) {
+      _outputStream = newStream;
+    }
+
     void loggerNamePadding(const int loggerNamePadding) {
       _loggerNamePadding = loggerNamePadding;
     }
