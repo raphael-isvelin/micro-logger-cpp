@@ -1,5 +1,7 @@
 sample/sample
 sample/a.out
 sample/test.logs
+sample/micro_logger_sample
 .idea
 .vscode
+cross-compile/build-windows

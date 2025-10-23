@@ -1,0 +1,62 @@
+# Dockerfile for cross-compiling micro-logger-cpp from macOS Silicon to Windows
+#
+# This is a header-only library, making it ideal for testing Windows compatibility.
+#
+# Usage:
+#   docker build -f Dockerfile.windows-cross -t micro-logger-windows-builder .
+#   docker run --rm -v $(pwd):/src -w /src micro-logger-windows-builder ./build-windows.sh
+
+# **NOTE: Vibed coded like the rest of the cross-compiling stuff). Will manually improve later, though it'll do it for my own initial tests.**
+
+FROM ubuntu:22.04
+
+# Prevent interactive prompts during package installation
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install cross-compilation toolchain and build tools
+# IMPORTANT: Use g++-mingw-w64-x86-64-posix for POSIX threading model
+# (win32 threading model does NOT support std::mutex, std::thread, etc.)
+RUN apt-get update && apt-get install -y \
+    mingw-w64 \
+    g++-mingw-w64-x86-64-posix \
+    cmake \
+    make \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set up cross-compilation environment
+# Use -posix variants for POSIX threading model (required for std::mutex, std::thread, etc.)
+ENV CC=x86_64-w64-mingw32-gcc-posix
+ENV CXX=x86_64-w64-mingw32-g++-posix
+ENV AR=x86_64-w64-mingw32-ar
+ENV RANLIB=x86_64-w64-mingw32-ranlib
+ENV STRIP=x86_64-w64-mingw32-strip
+
+# Create CMake toolchain file for Windows cross-compilation
+# Use -posix compilers for POSIX threading model
+RUN echo 'set(CMAKE_SYSTEM_NAME Windows)\n\
+set(CMAKE_SYSTEM_PROCESSOR x86_64)\n\
+\n\
+# Compilers (POSIX threading model for std::mutex, std::thread, etc.)\n\
+set(CMAKE_C_COMPILER x86_64-w64-mingw32-gcc-posix)\n\
+set(CMAKE_CXX_COMPILER x86_64-w64-mingw32-g++-posix)\n\
+set(CMAKE_RC_COMPILER x86_64-w64-mingw32-windres)\n\
+\n\
+# Target environment\n\
+set(CMAKE_FIND_ROOT_PATH /usr/x86_64-w64-mingw32)\n\
+\n\
+# Search for programs in the build host directories\n\
+set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)\n\
+\n\
+# Search for libraries and headers in the target directories\n\
+set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)\n\
+set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)\n\
+\n\
+# Windows-specific flags\n\
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static-libgcc -static-libstdc++")\n\
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static")\n' > /toolchain-windows.cmake
+
+WORKDIR /src
+
+# Default command: show help
+CMD ["echo", "Cross-compilation environment ready. Run: ./build-windows.sh"]

@@ -1,0 +1,32 @@
+# Dockerfile for testing Windows executables via Wine
+#
+# This is a lightweight container that runs wine64 to test x86_64 Windows executables
+# without needing a Windows machine.
+#
+# Usage:
+#   docker build -f Dockerfile.wine-test -t micro-logger-wine-test .
+#   docker run --rm -v $(pwd):/src -w /src micro-logger-wine-test wine64 build-windows/test.exe
+
+# **NOTE: Vibed coded like the rest of the cross-compiling stuff). Will manually improve later, though it'll do it for my own initial tests.**
+
+FROM --platform=linux/amd64 ubuntu:22.04
+
+# Prevent interactive prompts during package installation
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install Wine (64-bit only - we're compiling x64 Windows executables)
+RUN apt-get update && apt-get install -y \
+    wine64 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Configure Wine (suppress Wine debug output, but allow app stdout/stderr)
+ENV WINEDEBUG=-all
+ENV WINEPREFIX=/root/.wine
+ENV WINEDLLOVERRIDES="mscoree,mshtml="
+
+# Initialize Wine (creates .wine directory)
+RUN wine64 wineboot --init
+
+WORKDIR /src
+
+CMD ["echo", "Wine test environment ready. Run: wine64 build-windows/your_file.exe"]

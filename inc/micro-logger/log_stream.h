@@ -34,6 +34,7 @@ SOFTWARE.
 #include <chrono> // don't remove - needed with GCC -Werror
 #include <string>
 #include <iomanip>
+#include <mutex>
 
 #include "log_message_builder.h"
 

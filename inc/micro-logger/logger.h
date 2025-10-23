@@ -32,6 +32,7 @@ SOFTWARE.
 #pragma once
 
 #include <string>
+#include <mutex>
 
 #include "log_stream.h"
 

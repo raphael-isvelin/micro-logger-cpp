@@ -33,6 +33,7 @@ SOFTWARE.
 
 #include <string>
 #include <sstream>
+#include <mutex>
 
 #include "logs_observer.h"
 

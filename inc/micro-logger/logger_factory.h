@@ -34,6 +34,7 @@ SOFTWARE.
 #include <string>
 #include <utility>
 #include <memory>
+#include <mutex>
 
 #include "logger.h"
 
